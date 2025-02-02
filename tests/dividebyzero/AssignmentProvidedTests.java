@@ -87,4 +87,44 @@ class AssignmentProvidedTests {
     // :: error: divide.by.zero
     int k = 1 / z;
   }
+
+  public static void m() {
+    int one = 1;
+    int five = 5;
+    int zero = one / five;
+    // :: error: divide.by.zero
+    int x = 1 / zero;
+  }
+
+  public static void n(int y) {
+    if (y <= 0) {
+      if (y >= 0) {
+        // :: error: divide.by.zero
+        int x = 1 / y;
+      } else {
+        int x = 1 / y;
+      }
+      // :: error: divide.by.zero
+      int x = 1 / y;
+    } else {
+      int x = 1 / y;
+    }
+  }
+
+  public static void o(int y) {
+    if (!(y < 0 || y > 0)) {
+      // :: error: divide.by.zero
+      int x = 1 / y;
+      int one = y + 1;
+      // Logically, there should be no error here, but my lattice is not strong enough
+      // :: error: divide.by.zero
+      int z = 1 / one;
+    } else {
+      int x = 1 / y;
+      if (y == 0) {
+        // This is unreachable, so there should be no error here
+        int z = 1 / y;
+      }
+    }
+  }
 }

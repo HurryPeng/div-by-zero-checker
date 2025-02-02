@@ -76,8 +76,47 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror refineLhsOfComparison(
       Comparison operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
-    return lhs;
+    if (equal(rhs, top())) {
+      return lhs;
+    }
+
+    switch (operator) {
+      case EQ:
+      return glb(lhs, rhs);
+      case NE:
+      if (equal(lhs, rhs)) {
+        return bottom();
+      }
+      // If rhs is zero then return not zero
+      if (equal(rhs, reflect(DBZZero.class))) {
+        return reflect(DBZNotZero.class);
+      }
+      // If rhs is not zero then return zero
+      if (equal(rhs, reflect(DBZNotZero.class))) {
+        return reflect(DBZZero.class);
+      }
+      case LT:
+      if (equal(lhs, rhs)) {
+        return bottom();
+      }
+      // If rhs is zero then return not zero
+      if (equal(rhs, reflect(DBZZero.class))) {
+        return reflect(DBZNotZero.class);
+      }
+      case GT:
+      if (equal(lhs, rhs)) {
+        return bottom();
+      }
+      // If rhs is zero then return not zero
+      if (equal(rhs, reflect(DBZZero.class))) {
+        return reflect(DBZNotZero.class);
+      }
+      case LE:
+      case GE:
+      return lhs;
+      default:
+      throw new IllegalArgumentException("Unknown comparison operator: " + operator);
+    }
   }
 
   /**
@@ -97,7 +136,82 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror arithmeticTransfer(
       BinaryOperator operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
+    // Plus and minus are the same
+    switch (operator) {
+      case PLUS:
+      case MINUS:
+      // Bot +- anything = Bot
+      // anything +- Bot = Bot
+      if (equal(lhs, bottom()) || equal(rhs, bottom())) {
+        return bottom();
+      }
+      // Top +- anything = Top
+      // anything +- Top = Top
+      if (equal(lhs, top()) || equal(rhs, top())) {
+        return top();
+      }
+      // 0 +- 0 = 0
+      if (equal(lhs, reflect(DBZZero.class)) && equal(rhs, reflect(DBZZero.class))) {
+        return reflect(DBZZero.class);
+      }
+      // 0 +- !0 = !0
+      // !0 +- 0 = !0
+      if (equal(lhs, reflect(DBZZero.class)) && equal(rhs, reflect(DBZNotZero.class))
+          || equal(lhs, reflect(DBZNotZero.class)) && equal(rhs, reflect(DBZZero.class))) {
+        return reflect(DBZNotZero.class);
+      }
+      // !0 +- !0 = Top
+      if (equal(lhs, reflect(DBZNotZero.class)) && equal(rhs, reflect(DBZNotZero.class))) {
+        return top();
+      }
+      break;
+      case TIMES:
+      // Bot * anything = Bot
+      // anything * Bot = Bot
+      if (equal(lhs, bottom()) || equal(rhs, bottom())) {
+        return bottom();
+      }
+      // 0 * anything = 0
+      // anything * 0 = 0
+      if (equal(lhs, reflect(DBZZero.class)) || equal(rhs, reflect(DBZZero.class))) {
+        return reflect(DBZZero.class);
+      }
+      // Top * anything = Top
+      // anything * Top = Top
+      if (equal(lhs, top()) || equal(rhs, top())) {
+        return top();
+      }
+      // !0 * !0 = !0
+      if (equal(lhs, reflect(DBZNotZero.class)) && equal(rhs, reflect(DBZNotZero.class))) {
+        return reflect(DBZNotZero.class);
+      }
+      case DIVIDE:
+      case MOD:
+      // anything /% 0 = Bot
+      if (equal(rhs, reflect(DBZZero.class))) {
+        return bottom();
+      }
+      // Bot /% anything = Bot
+      // anything /% Bot = Bot
+      if (equal(lhs, bottom()) || equal(rhs, bottom())) {
+        return bottom();
+      }
+      // Top /% anything = Top
+      // anything /% Top = Top
+      if (equal(lhs, top()) || equal(rhs, top())) {
+        return top();
+      }
+      // 0 /% !0 = 0
+      if (equal(lhs, reflect(DBZZero.class)) && equal(rhs, reflect(DBZNotZero.class))) {
+        return reflect(DBZZero.class);
+      }
+      // !0 /% !0 = Top
+      if (equal(lhs, reflect(DBZNotZero.class)) && equal(rhs, reflect(DBZNotZero.class))) {
+        return top();
+      }
+      default:
+      throw new IllegalArgumentException("Unknown binary operator: " + operator);
+    }
     return top();
   }
 
